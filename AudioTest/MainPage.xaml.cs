@@ -1,12 +1,14 @@
-﻿using Plugin.Maui.Audio;
+﻿using Plugin.AudioRecorder;
+using Plugin.Maui.Audio;
 
 namespace AudioTest;
 
 public partial class MainPage : ContentPage
 {
     private readonly IAudioManager _audioManager;
-
     private IAudioRecorder _audioRecorder;
+
+    private readonly AudioRecorderService _audioRecorderService = new AudioRecorderService();
     
     public MainPage(IAudioManager audioManager)
     {
@@ -19,33 +21,35 @@ public partial class MainPage : ContentPage
     {
         try
         {
-            _audioRecorder = _audioManager.CreateRecorder();
+            //_audioRecorder = _audioManager.CreateRecorder();
 
             if (await Permissions.RequestAsync<Permissions.Microphone>() == PermissionStatus.Granted)
             {
                 
-                if (!_audioRecorder.IsRecording)
-                {
-                    
+                // if (!_audioRecorder.IsRecording)
+                // {
+                    // var options = new AudioRecordingOptions
+                    // {
+                    //     //SampleRate = AudioRecordingOptions.DefaultSampleRate,
+                    //     SampleRate = 16000,
+                    //     //Channels = AudioRecordingOptions.DefaultChannels,
+                    //     Channels = ChannelType.Stereo,
+                    //     //BitDepth = AudioRecordingOptions.DefaultBitDepth,
+                    //     BitDepth = BitDepth.Pcm16bit,
+                    //     //Encoding = AudioRecordingOptions.DefaultEncoding,
+                    //     Encoding = Encoding.Flac,
+                    //     ThrowIfNotSupported = true
+                    // };
+                    //
+                    //
+                    // await _audioRecorder.StartAsync(options);
+                    // //await audioRecorder.StartAsync();
+                // }
 
-                    var options = new AudioRecordingOptions
-                    {
-                        SampleRate = AudioRecordingOptions.DefaultSampleRate,
-                        //SampleRate = 16000,
-                        Channels = AudioRecordingOptions.DefaultChannels,
-                        //Channels = ChannelType.Stereo,
-                        BitDepth = AudioRecordingOptions.DefaultBitDepth,
-                        //BitDepth = BitDepth.Pcm16bit,
-                        Encoding = AudioRecordingOptions.DefaultEncoding,
-                        //Encoding = Encoding.Alac,
-                        ThrowIfNotSupported = true
-                    };
-                    
-                    
-                    await _audioRecorder.StartAsync(options);
-                    //await audioRecorder.StartAsync();
-                }
-                
+
+                await _audioRecorderService.StartRecording();
+
+
             }
         }
         catch (Exception exception)
@@ -57,25 +61,48 @@ public partial class MainPage : ContentPage
 
     private async void StopBtn_OnClicked(object? sender, EventArgs e)
     {
-        var recordedAudio = await _audioRecorder.StopAsync();
+        // var recordedAudio = await _audioRecorder.StopAsync();
+        //
+        // // basic player - doesn't work in Android
+        // //var player = AudioManager.Current.CreatePlayer(recordedAudio.GetAudioStream());
+        //
+        // byte[] recordedBytes;
+        //
+        // using (var stream = new MemoryStream())
+        // {
+        //     await recordedAudio.GetAudioStream().CopyToAsync(stream);
+        //     recordedBytes = stream.ToArray();
+        // }
+        //
+        //
+        // // this is for testing
+        // MemoryStream test = new MemoryStream(recordedBytes);
+        // var player = AudioManager.Current.CreatePlayer(test);
+        // player.Play();
+        // //testing end
 
-        // basic player - doesn't work in Android
-        //var player = AudioManager.Current.CreatePlayer(recordedAudio.GetAudioStream());
 
-        byte[] recordedBytes;
-        
-        using (var stream = new MemoryStream())
+        if (_audioRecorderService.IsRecording)
         {
-            await recordedAudio.GetAudioStream().CopyToAsync(stream);
-            recordedBytes = stream.ToArray();
+            await _audioRecorderService.StopRecording();
+
+            byte[] recordedBytes;
+            
+            using (var stream  = new MemoryStream())
+            {
+                await _audioRecorderService.GetAudioFileStream().CopyToAsync(stream);
+                recordedBytes = stream.ToArray();
+            }
+            
+            
+            // this is for testing
+            MemoryStream test = new MemoryStream(recordedBytes);
+            var player = AudioManager.Current.CreatePlayer(test);
+            player.Play();
+            //testing end
+            
         }
-
-
-        // this is for testing
-        MemoryStream test = new MemoryStream(recordedBytes);
-        var player = AudioManager.Current.CreatePlayer(test);
-        player.Play();
-        //testing end
+        
         
     }
 }
